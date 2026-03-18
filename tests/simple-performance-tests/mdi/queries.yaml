@@ -1,0 +1,65 @@
+datasets:
+  - simple-performance-tests/mdi/tiny
+  - simple-performance-tests/mdi/small
+  - simple-performance-tests/mdi/medium
+
+queries:
+  aql-mdi-equal:
+    query: |
+      FOR d IN mdi
+          FILTER d.x >= 0 && d.y == 0
+          RETURN [d.x, d.y]
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+        result_check:
+          check_script: ["python", "check_result.py", "x >= 0", "y == 0"]
+
+  aql-mdi-incl-range:
+    query: |
+      FOR d IN mdi
+          FILTER d.x <= 100 and d.y >= 50
+          RETURN [d.x, d.y]
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+        result_check:
+          check_script: ["python", "check_result.py", "x <= 100", "y >= 50"]
+
+  aql-mdi-incl-range-equal:
+    query: |
+      FOR d IN mdi
+          FILTER d.x <= 69 and d.y == 8
+          RETURN [d.x, d.y]
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+        result_check:
+          check_script: ["python", "check_result.py", "x <= 69", "y == 8"]
+
+  aql-mdi-range:
+    query: |
+      FOR d IN mdi
+        FILTER d.x > 50 and d.y < 47
+        RETURN d
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+        result_check:
+          check_script: ["python", "check_result.py", "x > 50", "y < 47"]
+
+  aql-mdi-equal-incl-range:
+    query: |
+      FOR d IN mdi
+        FILTER d.x == 9 and d.y >= 52
+        RETURN d
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+        result_check:
+          check_script: ["python", "check_result.py", "x == 9", "y >= 52"]

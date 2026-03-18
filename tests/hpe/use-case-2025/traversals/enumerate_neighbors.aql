@@ -1,0 +1,2 @@
+FOR w, e IN 1..1 OUTBOUND @v GRAPH "test" OPTIONS {uniqueVertices: true}
+    RETURN v

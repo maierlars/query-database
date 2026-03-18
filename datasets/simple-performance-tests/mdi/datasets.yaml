@@ -1,0 +1,12 @@
+datasets:
+  tiny:
+    generator_command: ["python", "generate_mdi.py", "--num-documents=1000"]
+
+  small:
+    generator_command: ["python", "generate_mdi.py", "--num-documents=10000"]
+
+  medium:
+    generator_command: ["python", "generate_mdi.py", "--num-documents=100000"]
+
+  large:
+    generator_command: ["python", "generate_mdi.py", "--num-documents=1000000"]
