@@ -1,0 +1,4 @@
+datasets:
+  default:
+    generator_command: ["python", "generate_hopgraph.py"]
+
