@@ -1,12 +1,16 @@
 datasets:
   tiny:
-    generator_command: ["python", "generate_mdi.py", "--num-documents=1000"]
+    source:
+      generator_command: ["python", "generate_mdi.py", "--num-docs=1000"]
 
   small:
-    generator_command: ["python", "generate_mdi.py", "--num-documents=10000"]
+    source:
+      generator_command: ["python", "generate_mdi.py", "--num-docs=10000"]
 
   medium:
-    generator_command: ["python", "generate_mdi.py", "--num-documents=100000"]
+    source:
+      generator_command: ["python", "generate_mdi.py", "--num-docs=100000"]
 
   large:
-    generator_command: ["python", "generate_mdi.py", "--num-documents=1000000"]
+    source:
+      generator_command: ["python", "generate_mdi.py", "--num-docs=1000000"]

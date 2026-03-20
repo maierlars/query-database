@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
+import dataclasses
 import json
 import click
 import listing
 from tabulate import tabulate
+
+from restore_dataset import restore_dataset
 
 
 @click.group()
@@ -23,7 +26,7 @@ def list():
               help="Output format for the listing.")
 def datasets(format):
     """List datasets"""
-    datasets = listing.get_datasets()
+    datasets = listing.get_datasets().values()
 
     if format == 'plain':
         print(tabulate(datasets, headers="keys"))
@@ -39,19 +42,31 @@ def datasets(format):
               help="Output format for the listing.")
 def queries(format):
     """List queries"""
-    queries = listing.get_test_queries()
+    all_queries = listing.get_test_queries().values()
 
     if format == 'plain':
-        fields = ["id", "query", "invocation"]
+        fields = ["id", "query_name", "invocation_name", "datasets"]
         data = []
-        for query in queries:
-            for dataset in query["datasets"]:
-                data.append([*[query[f] for f in fields], dataset])
-        print(tabulate(data, headers=[*fields, "dataset"]))
+        for query in all_queries:
+            data.append([getattr(query, f) for f in fields])
+        print(tabulate(data, headers=fields))
     elif format == 'jsonl':
-        for dataset in queries:
-            print(json.dumps(dataset))
+        for query in all_queries:
+            print(json.dumps(dataclasses.asdict(query)))
 
+@main.command()
+@click.argument("dataset")
+@click.option('--endpoint',
+              type=str,
+              default='http://localhost:8530/',
+              help="ArangoDB instance to be used")
+def restore(dataset: str, endpoint: str):
+    """Restores the given dataset into a database"""
+    all_datasets = listing.get_datasets()
+    access = restore_dataset(all_datasets[dataset], endpoint)
+    print(f"database: {access[0]}")
+    print(f"username: {access[1]}")
+    print(f"password: {access[2]}")
 
 if __name__ == "__main__":
     main()

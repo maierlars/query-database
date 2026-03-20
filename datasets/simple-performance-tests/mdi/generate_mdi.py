@@ -3,16 +3,18 @@ import arango
 import os
 import argparse
 
-ARANGO_HOSTS = os.environ['ARANGO_HOSTS'].split(',')
-ARANGO_USER = os.environ['ARANGO_USER']
+ARANGO_HOSTS = os.environ['ARANGO_HOSTS']
+ARANGO_USERNAME = os.environ['ARANGO_USERNAME']
 ARANGO_PASSWORD = os.environ['ARANGO_PASSWORD']
 ARANGO_DATABASE = os.environ['ARANGO_DATABASE']
 
 def generate(num_docs):
     client = arango.ArangoClient(hosts=ARANGO_HOSTS)
 
+    print(f"Running mdi generator script - generating {num_docs} documents in {ARANGO_HOSTS} database: {ARANGO_DATABASE}")
+
     # create mdi database
-    db = client.db(ARANGO_DATABASE, username=ARANGO_USER, password=ARANGO_PASSWORD)
+    db = client.db(ARANGO_DATABASE, username=ARANGO_USERNAME, password=ARANGO_PASSWORD)
 
     # create collection
     if not db.has_collection('mdi'):
@@ -29,6 +31,8 @@ def generate(num_docs):
             LET y = x + 0.5
             INSERT {x, y, i} INTO @@c
     """, bind_vars={"num_docs": num_docs, "@c": c.name})
+
+    print("mdi generation done")
 
 
 def main():

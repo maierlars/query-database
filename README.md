@@ -23,9 +23,13 @@ A huge collection of ideally real world queries, that are tested for performance
 - **Queries and Datasets are immutable:** once a dataset or a query has been added to the query database, they shall not be changed. Many queries depend on different datasets and changing those just causes confusion and might break things unnecessarily.
 
 ## Usage
-```
+```bash
+# List resrouces
 src/main.py list queries
 src/main.py list datasets
+
+# Restore a specific dataset
+src/main.py restore <dataset>
 ```
 
 ## Development

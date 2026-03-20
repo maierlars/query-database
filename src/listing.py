@@ -3,79 +3,84 @@ import os
 from pathlib import Path
 
 import yaml
-import fnmatch
 from deepmerge import always_merger as deepmerge
+from typedefs import Dataset, QueryInvocation
+from contextlib import chdir
 
+def instantiate_query_set(filename : Path):
+    definition = yaml.safe_load(filename.read_text())
+    datasets = definition["datasets"]
 
-def _scan_directory_recursive(directory, fltr=None):
-    for dirpath, dirs, filenames in os.walk(directory, topdown=True):
-        for filename in filenames:
-            if fltr is not None and not fnmatch.fnmatch(filename, fltr):
-                continue
-            yield os.path.join(dirpath, filename)
+    with chdir(filename.parent):
+        for query_name, query in definition["queries"].items():
 
+            # parse query text
+            text = query.get("query")
+            text_file = query.get("query_file")
+            if text_file is not None:
+                text = Path(text_file).read_text()
 
-def instantiate_query_set(query_set):
-    datasets = query_set["datasets"]
-    filename = query_set["filename"]
+            global_options = query.get("options", {})
 
-    for query_name, query in query_set["queries"].items():
+            for invocation_name, invocation in query.get("invocations", {}).items():
+                bind_param = invocation.get("bind_param", {})
 
-        # parse query text
-        text = query.get("query")
-        text_file = query.get("query_file")
-        if text_file is not None:
-            text = Path(text_file).read_text()
+                local_options = invocation.get("options", {})
+                # deep merge of options
+                options = deepmerge.merge(global_options, local_options)
 
-        global_options = query.get("options", {})
+                id_str = str(os.path.join(os.path.dirname(filename), query_name, invocation_name))
+                yield QueryInvocation(
+                    query_name=query_name,
+                    invocation_name=invocation_name,
+                    id=id_str,
+                    query_text=text,
+                    bind_parameter=bind_param,
+                    source_file=str(filename),
+                    options=options,
+                    datasets=datasets)
 
-        for invocation_name, invocation in query.get("invocations", {}).items():
-            bind_param = invocation.get("bind_param")
+@functools.cache
+def get_test_queries() -> dict[str, QueryInvocation]:
 
-            local_options = invocation.get("options", {})
-            # deep merge of options
-            options = deepmerge.merge(global_options, local_options)
+    all_queries = {}
+    for file_path in Path("tests").rglob("*.yaml"):
+        try:
+            queries = instantiate_query_set(file_path)
+        except RuntimeError as e:
+            raise RuntimeError(f"failed to parse query set file `{file_path}`: {e}") from e
 
-            inst = {"datasets": datasets,
-                    "query": query_name,
-                    "invocation": invocation_name,
-                    "id": os.path.join(os.path.dirname(filename), query_name, invocation_name),
-                    "query_text": text,
-                    "bind_param": bind_param,
-                    "filename": filename,
-                    "options": options}
-            yield inst
+        for q in queries:
+            all_queries[q.id] = q
+
+    return all_queries
+
+def _read_dataset_file(filename: Path):
+    with open(filename, "r") as f:
+        dataset_file = yaml.safe_load(f)
+        for name, dataset in dataset_file["datasets"].items():
+            id_str = str(os.path.join(os.path.dirname(filename), name))
+            yield Dataset(
+                source_file=str(filename),
+                short_name=name,
+                id=id_str,
+                source_description=dataset["source"]
+            )
 
 
 @functools.cache
-def get_test_queries():
-    def generator():
-        files = list(_scan_directory_recursive("tests", "*.yaml"))
-        wd = os.getcwd()
-        for file in files:
-            with open(file, "r") as f:
-                query_set = yaml.safe_load(f)
-                query_set["filename"] = file
-                os.chdir(os.path.dirname(file))
-                yield from instantiate_query_set(query_set)
-                os.chdir(wd)
+def get_datasets() -> dict[str, Dataset]:
+    all_datasets = {}
 
-    return list(generator())
+    # rglob("*.yaml") handles the recursive search natively
+    for file_path in Path("datasets").rglob("*.yaml"):
+        try:
+            # .extend() adds the list returned by _read_dataset_file to our main list
+            datasets = _read_dataset_file(file_path)
+        except RuntimeError as e:
+            raise RuntimeError(f"failed to parse dataset file `{file_path}`: {e}") from e
 
-@functools.cache
-def get_datasets():
-    def generator():
-        for file in _scan_directory_recursive("datasets", "*.yaml"):
-            with open(file, "r") as f:
-                dataset_set = yaml.safe_load(f)
-                dataset_set["filename"] = file
-                os.chdir(os.path.dirname(file))
-                for name, dataset in dataset_set["datasets"].items():
-                    dataset["filename"] = file
-                    dataset["name"] = name
-                    yield dataset
+        for ds in datasets:
+            all_datasets[ds.id] = ds
 
-    return list(generator())
-
-if __name__ == "__main__":
-    print(get_test_queries())
+    return all_datasets
