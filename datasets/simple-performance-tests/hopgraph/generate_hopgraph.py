@@ -3,6 +3,7 @@ import arango
 import os
 import argparse
 import random
+import string
 
 ARANGO_HOSTS = os.environ['ARANGO_HOSTS'].split(',')
 ARANGO_USER = os.environ['ARANGO_USER']
@@ -10,7 +11,7 @@ ARANGO_PASSWORD = os.environ['ARANGO_PASSWORD']
 ARANGO_DATABASE = os.environ['ARANGO_DATABASE']
 
 def generate_random_string(length):
-    ''.join(choice(ascii_uppercase) for i in range(length))
+    ''.join(random.choice(string.ascii_uppercase) for i in range(length))
 
 def generate(num_docs, num_edges, batch_size):
     client = arango.ArangoClient(hosts=ARANGO_HOSTS)
@@ -20,11 +21,18 @@ def generate(num_docs, num_edges, batch_size):
     ddb.delete_database("hop", ignore_missing=True)
     ddb.create_database("hop")
 
-    # create hopgraph database
     db = client.db(ARANGO_DATABASE, username=ARANGO_USER, password=ARANGO_PASSWORD)
     hopgraph = db.create_graph("hopgraph")
 
-    # Create an edge definition (relation) for the graph.
+    # The idea of this graph benchmark is that there are vertex collections
+    # A, B_1, B_2, ..., B_9, C_1, C2, ..., C_9 and edge collections E and F
+    # with edges going from A to B_i and from B_1 (!) to C_i 
+    #
+    # The queries executed in the attached benchmark try to find paths from a
+    # vertex in A to a vertex in C_1 (!)
+    #
+    # (likely intended to prove the superiority of iterated joins over traversals)
+
     E = hopgraph.create_edge_definition(
         edge_collection="E",
         from_vertex_collections=["A"],
@@ -32,8 +40,8 @@ def generate(num_docs, num_edges, batch_size):
     )
     F = hopgraph.create_edge_definition(
         edge_collection="F",
-        # TODO: check whether this is intentional (that the graph only defines
-        # itself to be between B1 and all C{i}
+        # It is intentional that the graph defintion only covers
+        # B1 -> C{i}
         from_vertex_collections=["B1"],
         to_vertex_collections=[f"C{i}" for i in range(1,10)]
     )
