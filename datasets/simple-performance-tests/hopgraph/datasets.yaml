@@ -2,3 +2,6 @@ datasets:
   tiny:
     source:
       generator_command: ["python", "generate_hopgraph.py", "--num-docs=1000", "--num-edges=1000", "--batch-size=1000"]
+  big:
+    source:
+      generator_command: ["python", "generate_hopgraph.py", "--num-docs=1000000", "--num-edges=1000000", "--batch-size=1000"]
