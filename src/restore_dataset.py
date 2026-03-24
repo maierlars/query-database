@@ -1,6 +1,5 @@
 import os
 import subprocess
-import sys
 
 import nanoid
 from arango import ArangoClient
@@ -45,7 +44,7 @@ def _generate_unique_test_database(client: ArangoClient):
 
     database = f"db_{nanoid.generate()}"
     username = nanoid.generate()
-    password = nanoid.generate() # This is not about security
+    password = nanoid.generate() # This is not about security but to prevent generator script malfunction.
 
     print(f"Creating database {database}")
     client.db("_system").create_database(database, users=[{"username": username, "password": password}])

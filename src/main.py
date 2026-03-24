@@ -93,6 +93,33 @@ def create_result(query_id: str, database: str, username: str, password: str, en
 
     print(f"Query result written to `{filename}`")
 
+@main.command()
+@click.argument("query-id")
+@click.argument("database")
+@click.argument("username")
+@click.argument("password")
+@click.option('--endpoint',
+              type=str,
+              default='http://localhost:8530/',
+              help="ArangoDB instance to be used")
+def profile(query_id: str, database: str, username: str, password: str, endpoint: str):
+    """Runs a single profiler run for the given query"""
+    all_queries = listing.get_test_queries()
+    query = all_queries[query_id]
+
+    results = check_query.profile_query(query, {
+        "host": endpoint,
+        "database": database,
+        "username": username,
+        "password": password
+    })
+
+    data = [
+        (name, f"{1000*delta:.3f}ms") for name, delta in results.items()
+    ]
+
+    print(tabulate(data, headers=["Stage", "Time"]))
+
 
 if __name__ == "__main__":
     main()
