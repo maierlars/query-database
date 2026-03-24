@@ -44,3 +44,9 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+### Adding new requirements
+Use the virtual environment to add new dependencies. Then update the `requirements.txt` like so:
+```
+pip freeze > requirements.txt
+```
