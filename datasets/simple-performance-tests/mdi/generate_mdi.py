@@ -29,7 +29,7 @@ def generate(num_docs):
         FOR i IN 1..@num_docs
             LET x = (i - 500) / 10
             LET y = x + 0.5
-            INSERT {x, y, i} INTO @@c
+            INSERT {_key: CONCAT("doc_", i), x, y, i} INTO @@c
     """, bind_vars={"num_docs": num_docs, "@c": c.name})
 
     print("mdi generation done")
