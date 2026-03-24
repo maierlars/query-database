@@ -6,6 +6,7 @@ import listing
 from tabulate import tabulate
 
 from restore_dataset import restore_dataset
+import check_query
 
 
 @click.group()
@@ -67,6 +68,31 @@ def restore(dataset: str, endpoint: str):
     print(f"database: {access[0]}")
     print(f"username: {access[1]}")
     print(f"password: {access[2]}")
+
+
+@main.command()
+@click.argument("query-id")
+@click.argument("database")
+@click.argument("username")
+@click.argument("password")
+@click.option('--endpoint',
+              type=str,
+              default='http://localhost:8530/',
+              help="ArangoDB instance to be used")
+def create_result(query_id: str, database: str, username: str, password: str, endpoint: str):
+    """Creates a result file for the given query"""
+    all_queries = listing.get_test_queries()
+    query = all_queries[query_id]
+
+    filename = check_query.create_query_result(query, {
+        "host": endpoint,
+        "database": database,
+        "username": username,
+        "password": password
+    })
+
+    print(f"Query result written to `{filename}`")
+
 
 if __name__ == "__main__":
     main()
