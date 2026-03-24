@@ -5,8 +5,8 @@ import argparse
 import random
 import string
 
-ARANGO_HOSTS = os.environ['ARANGO_HOSTS'].split(',')
-ARANGO_USER = os.environ['ARANGO_USER']
+ARANGO_HOSTS = os.environ['ARANGO_HOSTS']
+ARANGO_USERNAME = os.environ['ARANGO_USERNAME']
 ARANGO_PASSWORD = os.environ['ARANGO_PASSWORD']
 ARANGO_DATABASE = os.environ['ARANGO_DATABASE']
 
@@ -16,12 +16,7 @@ def generate_random_string(length):
 def generate(num_docs, num_edges, batch_size):
     client = arango.ArangoClient(hosts=ARANGO_HOSTS)
 
-    ddb = client.db()
-
-    ddb.delete_database("hop", ignore_missing=True)
-    ddb.create_database("hop")
-
-    db = client.db(ARANGO_DATABASE, username=ARANGO_USER, password=ARANGO_PASSWORD)
+    db = client.db(ARANGO_DATABASE, username=ARANGO_USERNAME, password=ARANGO_PASSWORD)
     hopgraph = db.create_graph("hopgraph")
 
     # The idea of this graph benchmark is that there are vertex collections
