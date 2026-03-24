@@ -4,6 +4,7 @@ import os
 import argparse
 import random
 import string
+import multiprocessing
 
 ARANGO_HOSTS = os.environ['ARANGO_HOSTS']
 ARANGO_USERNAME = os.environ['ARANGO_USERNAME']
@@ -11,8 +12,44 @@ ARANGO_PASSWORD = os.environ['ARANGO_PASSWORD']
 ARANGO_DATABASE = os.environ['ARANGO_DATABASE']
 
 def generate_random_string(length):
-    ''.join(random.choice(string.ascii_uppercase) for i in range(length))
+    return ''.join(random.choice(string.ascii_uppercase) for i in range(length))
 
+def generate_vertex_collection(args):
+    db = args[0]
+    num_docs = args[1]
+    collection = args[2]
+
+    print(f"Inserting docs into {collection}")
+
+    into = db.collection(name=collection)
+    docs = [ { "_key": f"doc_{d}",
+               "payload": generate_random_string(100) } for d in range(0, num_docs) ]
+    into.insert(docs)
+
+def generate_E_edges(db, num_docs, num_edges):
+    e = db.collection(name="E")
+    print("generating edges for E")
+    edges = [ { "_key": f"{i}",
+                "_from": f"A/doc_{random.randrange(0, num_docs)}",
+                "_to": f"B{random.randrange(1,10)}/doc_{random.randrange(0,num_docs)}",
+                "payload": generate_random_string(50)}
+              for i in range(0,num_edges) ]
+    print(f"inserting edges into E")
+    e.insert(edges)
+    print("done inserting into E")
+
+def generate_F_edges(db, num_docs, num_edges):
+    f = db.collection(name="F")
+    print("generating edges for F")
+    edges = [ { "_key": f"{i}",
+                "_from": f"B1/doc_{random.randrange(0, num_docs)}",
+                "_to": f"C{random.randrange(1,10)}/doc_{random.randrange(0,num_docs)}",
+                "payload": generate_random_string(50)}
+              for i in range(0,num_edges) ]
+    print(f"inserting edges into F")
+    f.insert(edges)
+    print("done inserting into F")
+ 
 def generate(num_docs, num_edges, batch_size):
     client = arango.ArangoClient(hosts=ARANGO_HOSTS)
 
@@ -41,29 +78,17 @@ def generate(num_docs, num_edges, batch_size):
         to_vertex_collections=[f"C{i}" for i in range(1,10)]
     )
 
-    for col in ["A"] + [f"B{i}" for i in range(1,10)] + [f"C{i}" for i in range(1,10)]:
-        into = db.collection(name=col)
-        print(f"generating documents for {col}")
-        docs = [ { "_key": f"doc_{d}",
-                   "payload": generate_random_string(100) } for d in range(0, num_docs) ]
-        print(f"inserting documents into {col}")
-        into.insert(docs)
-        print("done")
-
-    e = db.collection(name="E")
-    edges = [ { "_from": f"A/doc_{random.randrange(0, num_docs)}",
-                "_to": f"B{random.randrange(1,10)}/doc_{random.randrange(0,num_docs)}",
-                "payload": generate_random_string(50)}
-              for i in range(0,num_edges) ]
-    e.insert(edges)
-
-    edges = [ { "_from": f"B1/doc_{random.randrange(0, num_docs)}",
-                "_to": f"C{random.randrange(1,10)}/doc_{random.randrange(0,num_docs)}",
-                "payload": generate_random_string(50)}
-              for i in range(0,num_edges) ]
-    f = db.collection(name="F")
-    f.insert(edges)
+    collections = ["A"] + [f"B{i}" for i in range(1,10)] + [f"C{i}" for i in range(1,10)]
+    args = [(db, num_docs, coll) for coll in collections]
+    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+    pool.apply_async(generate_E_edges, [db, num_docs, num_edges])
+    pool.map_async(generate_vertex_collection, args)
+    pool.apply_async(generate_F_edges, [db, num_docs, num_edges])
     
+    pool.close()
+    pool.join()
+
+   
 def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument('--num-docs', type=int, default=1000000)
