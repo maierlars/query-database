@@ -69,6 +69,7 @@ def main():
     argparser.add_argument('--num-docs', type=int, default=1000000)
     argparser.add_argument('--num-edges', type=int, default=1000)
     argparser.add_argument('--batch-size', type=int, default=1000)
+    argparser.add_argument('--seed', type=int, default=0)
     args = argparser.parse_args()
     generate(args.num_docs, args.num_edges, args.batch_size)
 
