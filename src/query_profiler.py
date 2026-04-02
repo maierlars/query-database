@@ -17,6 +17,8 @@ def profile_query(query: QueryInvocation, access: DatabaseAccess, reporter: Prof
     client = ArangoClient(hosts=access.hostname)
     db = client.db(access.database, access.username, access.password)
 
+    print(f"Profiling query {query.id}")
+
     print(f"Performing {query.warm_up_runs} warm up runs...")
     for idx in range(query.warm_up_runs):
         # TODO check for errors here?

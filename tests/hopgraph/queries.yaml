@@ -1,0 +1,126 @@
+datasets:
+- hopgraph/tiny
+
+queries:
+  one_hop:
+    query: |
+      FOR a IN A
+        LET x = (FOR b IN 1..1 OUTBOUND a._id E
+                   FOR c IN 1..1 OUTBOUND b._id F
+                     FILTER IS_SAME_COLLECTION(c, "C1")
+                     LIMIT 1
+                     RETURN {b, c})
+        FILTER LENGTH(x) > 0
+        LIMIT 1000
+        RETURN {a, b: x[0].b, c: x[0].c}
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+  one_hop_with_graph:
+    query: |
+      FOR a IN A
+        LET x = (FOR b IN 1..1 OUTBOUND a._id GRAPH "hopgraph"
+                   FOR c IN 1..1 OUTBOUND b._id GRAPH "hopgraph"
+                     FILTER IS_SAME_COLLECTION(c, "C1")
+                     LIMIT 1
+                     RETURN {b, c})
+        FILTER LENGTH(x) > 0
+        LIMIT 1000
+        RETURN {a, b: x[0].b, c: x[0].c}
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+  one_hop_with_prune:
+    query: |
+      FOR a IN A
+        LET x = (FOR b IN 1..1 OUTBOUND a._id E
+                   PRUNE IS_SAME_COLLECTION(b, "B1")
+                   FOR c IN 1..1 OUTBOUND b._id F
+                     FILTER IS_SAME_COLLECTION(c, "C1")
+                     LIMIT 1
+                     RETURN {b, c})
+        FILTER LENGTH(x) > 0
+        LIMIT 1000
+        RETURN {a, b: x[0].b, c: x[0].c}
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+  one_hop_with_graph_and_prune:
+    query: |
+      FOR a IN A
+        LET x = (FOR b IN 1..1 OUTBOUND a._id GRAPH "hopgraph"
+                   PRUNE IS_SAME_COLLECTION(b, "B1")
+                   FOR c IN 1..1 OUTBOUND b._id GRAPH "hopgraph"
+                     FILTER IS_SAME_COLLECTION(c, "C1")
+                     LIMIT 1
+                     RETURN {b, c})
+        FILTER LENGTH(x) > 0
+        LIMIT 1000
+        RETURN {a, b: x[0].b, c: x[0].c}
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+  two_hop:
+    query: |
+      FOR a IN A
+        LET x = (FOR c, e, p IN 2..2 OUTBOUND a._id E, F
+                     PRUNE LENGTH(p.vertices) > 1 AND !IS_SAME_COLLECTION(p.vertices[1], "B1")
+                     FILTER IS_SAME_COLLECTION(c, "C1")
+                     LIMIT 1
+                     RETURN {b : p.vertices[1], c})
+        FILTER LENGTH(x) > 0
+        LIMIT 1000
+        RETURN {a, b: x[0].b, c: x[0].c}
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+  two_hop_vertex_collection_filter:
+    query: |
+      FOR a IN A
+        LET x = (FOR c, e, p IN 2..2 OUTBOUND a._id E, F
+                     FILTER IS_SAME_COLLECTION(p.vertices[1], "B1")
+                     FILTER IS_SAME_COLLECTION(c, "C1")
+                     LIMIT 1
+                     RETURN {b : p.vertices[1], c})
+        FILTER LENGTH(x) > 0
+        LIMIT 1000
+        RETURN {a, b: x[0].b, c: x[0].c}
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+  two_hop_edge_collection_filter:
+    query: |
+      FOR a IN A
+        LET x = (FOR c, e, p IN 2..2 OUTBOUND a._id E, F
+                     FILTER IS_SAME_COLLECTION(p.edges[0]._to, "B1")
+                     FILTER IS_SAME_COLLECTION(p.edges[1]._to, "C1")
+                     LIMIT 1
+                     RETURN {b : p.vertices[1], c})
+        FILTER LENGTH(x) > 0
+        LIMIT 1000
+        RETURN {a, b: x[0].b, c: x[0].c}
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
+  two_hop_prune:
+    query: |
+      FOR a IN A
+        LET x = (FOR c, e, p IN 2..2 OUTBOUND a._id E, F
+                     PRUNE e != null && !IS_SAME_COLLECTION(c, "B1")
+                     FILTER IS_SAME_COLLECTION(c, "C1")
+                     LIMIT 1
+                     RETURN {b : p.vertices[1], c})
+        FILTER LENGTH(x) > 0
+        LIMIT 1000
+        RETURN {a, b: x[0].b, c: x[0].c}
+    invocations:
+      single_invocation:
+        number_of_runs: 10
+        warm_up_runs: 4
