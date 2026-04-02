@@ -7,7 +7,7 @@ A huge collection of ideally real-world queries that are tested for performance 
 
 ### Why do we need this?
 - The state of performance tests at ArangoDB is insufficient. There are many incompatible and hard-to-maintain test frameworks that test very specific aspects. They do not reflect real-world use-cases.
-- Optimizer tests only very specific and small queries, which are tailored to invoke the optimizer rule under test. There are very few cross-functionality tests and tests on real world queries and datasets. Thus, changes to the optimizer can barely be evaluated for correctness. 
+- Optimizer tests check only very specific and small queries, which are tailored to invoke the optimizer rule under test. There are very few cross-functionality tests and tests on real world queries and datasets. Thus, changes to the optimizer can barely be evaluated for correctness. 
 - Correctness of results is rarely scrutinized in performance tests yielding misleading "optimized" outcomes.
 
 ### Goals

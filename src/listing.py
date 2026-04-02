@@ -7,7 +7,8 @@ from deepmerge import always_merger as deepmerge
 from typedefs import Dataset, QueryInvocation
 from contextlib import chdir
 
-def instantiate_query_set(filename : Path):
+
+def instantiate_query_set(filename: Path):
     definition = yaml.safe_load(filename.read_text())
     datasets = definition["datasets"]
 
@@ -29,7 +30,10 @@ def instantiate_query_set(filename : Path):
                 # deep merge of options
                 options = deepmerge.merge(global_options, local_options)
 
-                id_str = str(os.path.join(os.path.dirname(filename), query_name, invocation_name))
+                warm_up_runs = invocation.get("warm_up_runs", 1)
+                number_of_runs = invocation.get("number_of_runs", 5)
+
+                id_str = str(os.path.join(os.path.dirname(filename).removeprefix("tests/"), query_name, invocation_name))
                 yield QueryInvocation(
                     query_name=query_name,
                     invocation_name=invocation_name,
@@ -38,11 +42,13 @@ def instantiate_query_set(filename : Path):
                     bind_parameter=bind_param,
                     source_file=str(filename),
                     options=options,
-                    datasets=datasets)
+                    datasets=datasets,
+                    warm_up_runs=warm_up_runs,
+                    number_of_runs=number_of_runs)
+
 
 @functools.cache
 def get_test_queries() -> dict[str, QueryInvocation]:
-
     all_queries = {}
     for file_path in Path("tests").rglob("*.yaml"):
         try:
@@ -55,11 +61,12 @@ def get_test_queries() -> dict[str, QueryInvocation]:
 
     return all_queries
 
+
 def _read_dataset_file(filename: Path):
     with open(filename, "r") as f:
         dataset_file = yaml.safe_load(f)
         for name, dataset in dataset_file["datasets"].items():
-            id_str = str(os.path.join(os.path.dirname(filename), name))
+            id_str = str(os.path.join(os.path.dirname(filename).removeprefix("datasets/"), name))
             yield Dataset(
                 source_file=str(filename),
                 short_name=name,
@@ -72,10 +79,8 @@ def _read_dataset_file(filename: Path):
 def get_datasets() -> dict[str, Dataset]:
     all_datasets = {}
 
-    # rglob("*.yaml") handles the recursive search natively
     for file_path in Path("datasets").rglob("*.yaml"):
         try:
-            # .extend() adds the list returned by _read_dataset_file to our main list
             datasets = _read_dataset_file(file_path)
         except RuntimeError as e:
             raise RuntimeError(f"failed to parse dataset file `{file_path}`: {e}") from e

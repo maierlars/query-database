@@ -1,0 +1,4 @@
+datasets:
+  one-to-one:
+    source:
+      generator_command: ["python", "generate_join_set.py", "--num-docs=1000"]

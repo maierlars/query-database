@@ -1,0 +1,10 @@
+datasets:
+  - simple-performance-tests/cluster-join/one-to-one
+
+queries:
+  join-shard-key:
+    query: |
+      FOR doc1 IN c1
+        FOR doc2 IN c2
+          FILTER doc2.shard_key == doc1.foregin_key
+          RETURN [doc1._id, doc2._id]

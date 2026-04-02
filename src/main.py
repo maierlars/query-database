@@ -5,8 +5,10 @@ import click
 import listing
 from tabulate import tabulate
 
-from restore_dataset import restore_dataset
+from restore_dataset import restore_dataset, remove_dataset
 import check_query
+import query_profiler
+from typedefs import DatabaseAccess
 
 
 @click.group()
@@ -94,31 +96,35 @@ def create_result(query_id: str, database: str, username: str, password: str, en
     print(f"Query result written to `{filename}`")
 
 @main.command()
-@click.argument("query-id")
-@click.argument("database")
-@click.argument("username")
-@click.argument("password")
 @click.option('--endpoint',
               type=str,
               default='http://localhost:8530/',
               help="ArangoDB instance to be used")
-def profile(query_id: str, database: str, username: str, password: str, endpoint: str):
+def profile(endpoint: str):
     """Runs a single profiler run for the given query"""
+    access = DatabaseAccess(endpoint, "root", "", "_system")
+
     all_queries = listing.get_test_queries()
-    query = all_queries[query_id]
+    all_datasets = listing.get_datasets()
 
-    results = check_query.profile_query(query, {
-        "host": endpoint,
-        "database": database,
-        "username": username,
-        "password": password
-    })
 
-    data = [
-        (name, f"{1000*delta:.3f}ms") for name, delta in results.items()
-    ]
+    queries_by_dataset = dict()
 
-    print(tabulate(data, headers=["Stage", "Time"]))
+    # assign queries to datasets
+    for query in all_queries.values():
+        for dataset in query.datasets:
+            queries_by_dataset.setdefault(dataset, []).append(query)
+
+
+    # now restore each dataset and run all the queries on it
+    for dataset, query_set in queries_by_dataset.items():
+        ds_access = restore_dataset(all_datasets[dataset], access)
+
+        for query in query_set:
+            query_profiler.profile_query(query, ds_access, query_profiler.PrintReporter())
+
+        # clear dataset
+        remove_dataset(access, ds_access.database)
 
 
 if __name__ == "__main__":

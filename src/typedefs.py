@@ -18,3 +18,16 @@ class QueryInvocation:
     query_name: str
     id: str
     options: dict
+    number_of_runs: int
+    warm_up_runs: int
+
+@dataclass
+class ConnectionAccess:
+    hostname: str
+    username: str
+    password: str
+
+
+@dataclass
+class DatabaseAccess(ConnectionAccess):
+    database: str

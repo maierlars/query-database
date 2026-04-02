@@ -24,9 +24,3 @@ def create_query_result(query: QueryInvocation, access):
     write_query_result_to_temp_file(query, db, filename)
 
     return filename.name
-
-def profile_query(query: QueryInvocation, access):
-    client = ArangoClient(hosts=access["host"])
-    db = client.db(access["database"], username=access["username"], password=access["password"])
-    result = db.aql.execute(query=query.query_text, bind_vars=query.bind_parameter, profile=True)
-    return result.profile()
